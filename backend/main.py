@@ -60,17 +60,20 @@ def run_migrations():
     config = Config("alembic.ini")
     script = ScriptDirectory.from_config(config)
     
-    with engine.begin() as conn:
+    # Проверяем ревизию в отдельном коротком соединении
+    current_rev = None
+    with engine.connect() as conn:
         context = MigrationContext.configure(conn)
         current_rev = context.get_current_revision()
-        head_rev = script.get_current_head()
-        
-        if current_rev != head_rev:
-            logger.info(f"Обновление схемы БД: {current_rev} -> {head_rev}")
-            command.upgrade(config, "head")
-            logger.info("Схема БД обновлена")
-        else:
-            logger.info("Схема БД актуальна")
+    
+    head_rev = script.get_current_head()
+    
+    if current_rev != head_rev:
+        logger.info(f"Обновление схемы БД: {current_rev} -> {head_rev}")
+        command.upgrade(config, "head")
+        logger.info("Схема БД обновлена")
+    else:
+        logger.info("Схема БД актуальна")
 
 app = FastAPI(
     title="СУРПП",

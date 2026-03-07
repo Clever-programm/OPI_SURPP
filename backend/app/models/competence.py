@@ -11,5 +11,5 @@ class Competence(Base):
     description = Column(String(500), nullable=True)
     
     # Связи
-    employee_competences = relationship("EmployeeCompetence", back_populates="competence")
-    operations = relationship("Operation", back_populates="competence")
+    # employee_competences = relationship("EmployeeCompetence", back_populates="competence")
+    # operations = relationship("Operation", back_populates="competence")

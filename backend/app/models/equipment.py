@@ -11,5 +11,5 @@ class Equipment(Base):
     quantity = Column(Integer, nullable=False, default=1)
     
     # Связи
-    operations = relationship("Operation", back_populates="equipment")
-    schedule_entries = relationship("Schedule", back_populates="equipment")
+    # operations = relationship("Operation", back_populates="equipment")
+    # schedule_entries = relationship("Schedule", back_populates="equipment")
