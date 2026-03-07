@@ -7,8 +7,8 @@ class EmployeeCompetence(Base):
     __tablename__ = "employee_competences"
     
     id = Column(Integer, primary_key=True, index=True)
-    employee_id = Column(Integer, ForeignKey("employee.id"), nullable=False)
-    competence_id = Column(Integer, ForeignKey("competence.id"), nullable=False)
+    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
+    competence_id = Column(Integer, ForeignKey("competences.id"), nullable=False)
     
     # Связи
     employee = relationship("Employee", back_populates="competences")

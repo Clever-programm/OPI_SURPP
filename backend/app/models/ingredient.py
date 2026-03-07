@@ -13,4 +13,4 @@ class Ingredient(Base):
     
     # Связи
     # stock_items = relationship("Stock", back_populates="ingredient")
-    # recipe_ingredients = relationship("RecipeIngredient", back_populates="ingredient")
+    recipe_ingredients = relationship("RecipeIngredient", back_populates="ingredient")

@@ -4,14 +4,10 @@ import os
 import sys
 
 from fastapi import FastAPI
-from sqlalchemy import text, create_engine
+from sqlalchemy import text
 from contextlib import asynccontextmanager
 
-from app.core.database import engine, Base
-from alembic.config import Config
-from alembic import command
-from alembic.script import ScriptDirectory
-from alembic.runtime.migration import MigrationContext
+from app.core.database import engine
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -56,30 +52,28 @@ def check_db_connection():
         conn.execute(text("SELECT 1"))
 
 def run_migrations():
-    """Применение миграций Alembic""" 
-    db_url = os.getenv("DB_SYNC")
-    if not db_url:
-        raise ValueError("DB_SYNC not found in environment")
+    """Применение миграций Alembic"""
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+    from alembic.runtime.migration import MigrationContext
+    from alembic import command
     
-    db_url = db_url.replace("asyncpg", "psycopg2")
+    config = Config("alembic.ini")
+    script = ScriptDirectory.from_config(config)
     
-    migration_engine = create_engine(db_url, pool_pre_ping=True)
-    
-    script = ScriptDirectory.from_config(Config("alembic.ini"))
-    
-    with migration_engine.begin() as conn:
+    current_rev = None
+    with engine.connect() as conn:
         context = MigrationContext.configure(conn)
         current_rev = context.get_current_revision()
-        head_rev = script.get_current_head()
-        
-        if current_rev != head_rev:
-            logger.info(f"Обновление схемы БД: {current_rev} -> {head_rev}")
-            context.run_migrations()
-            logger.info("Схема БД обновлена")
-        else:
-            logger.info("Схема БД актуальна")
     
-    migration_engine.dispose()
+    head_rev = script.get_current_head()
+    
+    if current_rev != head_rev:
+        logger.info(f"Обновление схемы БД: {current_rev} -> {head_rev}")
+        command.upgrade(config, "head")
+        logger.info("Схема БД обновлена")
+    else:
+        logger.info("Схема БД актуальна")
 
 app = FastAPI(
     title="СУРПП",
