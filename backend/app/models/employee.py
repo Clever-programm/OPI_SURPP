@@ -12,4 +12,4 @@ class Employee(Base):
     
     # Связи
     competences = relationship("EmployeeCompetence", back_populates="employee")
-    # schedule_entries = relationship("Schedule", back_populates="employee")
+    schedule_entries = relationship("Schedule", back_populates="employee")

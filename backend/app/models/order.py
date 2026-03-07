@@ -16,4 +16,4 @@ class Order(Base):
     
     # Связи
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
-    # schedule_entries = relationship("Schedule", back_populates="order")
+    schedule_entries = relationship("Schedule", back_populates="order")

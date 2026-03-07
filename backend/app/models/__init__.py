@@ -8,3 +8,5 @@ from .order_item import OrderItem
 from .order import Order
 from .recipe_ingredient import RecipeIngredient
 from .recipe import Recipe
+from .schedule import Schedule
+from .stock import Stock
