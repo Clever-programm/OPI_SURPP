@@ -11,5 +11,5 @@ class Recipe(Base):
     
     # Связи
     ingredients = relationship("RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
-    # operations = relationship("Operation", back_populates="recipe", cascade="all, delete-orphan", order_by="Operation.sequence_number")
-    # order_items = relationship("OrderItem", back_populates="recipe")
+    operations = relationship("Operation", back_populates="recipe", cascade="all, delete-orphan", order_by="Operation.sequence_number")
+    order_items = relationship("OrderItem", back_populates="recipe")
