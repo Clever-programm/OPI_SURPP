@@ -4,7 +4,7 @@ import os
 import sys
 
 from fastapi import FastAPI
-from sqlalchemy import text
+from sqlalchemy import text, create_engine
 from contextlib import asynccontextmanager
 
 from app.core.database import engine, Base
@@ -56,24 +56,30 @@ def check_db_connection():
         conn.execute(text("SELECT 1"))
 
 def run_migrations():
-    """Применение миграций Alembic"""
-    config = Config("alembic.ini")
-    script = ScriptDirectory.from_config(config)
+    """Применение миграций Alembic""" 
+    db_url = os.getenv("DB_SYNC")
+    if not db_url:
+        raise ValueError("DB_SYNC not found in environment")
     
-    # Проверяем ревизию в отдельном коротком соединении
-    current_rev = None
-    with engine.connect() as conn:
+    db_url = db_url.replace("asyncpg", "psycopg2")
+    
+    migration_engine = create_engine(db_url, pool_pre_ping=True)
+    
+    script = ScriptDirectory.from_config(Config("alembic.ini"))
+    
+    with migration_engine.begin() as conn:
         context = MigrationContext.configure(conn)
         current_rev = context.get_current_revision()
+        head_rev = script.get_current_head()
+        
+        if current_rev != head_rev:
+            logger.info(f"Обновление схемы БД: {current_rev} -> {head_rev}")
+            context.run_migrations()
+            logger.info("Схема БД обновлена")
+        else:
+            logger.info("Схема БД актуальна")
     
-    head_rev = script.get_current_head()
-    
-    if current_rev != head_rev:
-        logger.info(f"Обновление схемы БД: {current_rev} -> {head_rev}")
-        command.upgrade(config, "head")
-        logger.info("Схема БД обновлена")
-    else:
-        logger.info("Схема БД актуальна")
+    migration_engine.dispose()
 
 app = FastAPI(
     title="СУРПП",
