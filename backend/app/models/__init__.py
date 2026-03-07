@@ -4,5 +4,7 @@ from .employee import Employee
 from .equipment import Equipment
 from .ingredient import Ingredient
 from .operation import Operation
+from .order_item import OrderItem
+from .order import Order
 from .recipe_ingredient import RecipeIngredient
 from .recipe import Recipe
