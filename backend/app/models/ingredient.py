@@ -12,5 +12,5 @@ class Ingredient(Base):
     shelf_life_days = Column(Integer, nullable=False)
     
     # Связи
-    # stock_items = relationship("Stock", back_populates="ingredient")
+    stock_items = relationship("Stock", back_populates="ingredient")
     recipe_ingredients = relationship("RecipeIngredient", back_populates="ingredient")
