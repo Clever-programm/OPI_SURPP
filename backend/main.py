@@ -28,9 +28,9 @@ async def lifespan(app: FastAPI):
         await asyncio.to_thread(check_db_connection)
         logger.info("Соединение с БД установлено")
         
-        logger.info("Применение миграций Alembic...")
-        await asyncio.to_thread(run_migrations)
-        logger.info("Миграции базы данных применены успешно")
+        # logger.info("Применение миграций Alembic...")
+        # await asyncio.to_thread(run_migrations)
+        # logger.info("Миграции базы данных применены успешно")
     except Exception as e:
         logger.error(f"Ошибка при инициализации: {e}", exc_info=True)
         raise
