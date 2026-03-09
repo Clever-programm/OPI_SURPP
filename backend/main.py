@@ -8,9 +8,10 @@ from sqlalchemy import text
 from contextlib import asynccontextmanager
 
 from app.core.database import engine
+from app.core.config import settings
 
 logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    level=settings.LOG_LEVEL.upper(),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[logging.StreamHandler(sys.stdout)]

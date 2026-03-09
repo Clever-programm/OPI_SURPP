@@ -74,9 +74,10 @@
 ```bash
 # Клонировать репозиторий
 git clone <repo-url>
-cd OPI_SURPP
+cd OPI_SURPP/backend
 
-# Изменить переменные окружения в docker-compose.yaml по необходимости
+# Скопировать переменные окружения
+cp .env.example .env
 
 # Запустить контейнеры
 docker-compose up --build

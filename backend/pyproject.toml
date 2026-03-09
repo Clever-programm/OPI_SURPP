@@ -10,12 +10,13 @@ package-mode = false
 [tool.poetry.dependencies]
 python = ">=3.11"
 uvicorn = ">=0.41.0,<0.42.0"
-sqlalchemy = ">=2.0.46,<3.0.0"
+sqlalchemy = {extras = ["asyncio"], version = ">=2.0.46,<3.0.0"}
 asyncpg = ">=0.31.0,<0.32.0"
 python-dotenv = "^1.2.1"
 alembic = "^1.18.4"
 fastapi = "^0.135.1"
 psycopg2 = "^2.9.11"
+pydantic-settings = "^2.13.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"
