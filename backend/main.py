@@ -16,7 +16,7 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 
-logger = logging.getLogger("startup")
+logger = logging.getLogger("STARTUP")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
