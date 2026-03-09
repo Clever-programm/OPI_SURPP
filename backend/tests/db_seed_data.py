@@ -3,7 +3,7 @@
 Идемпотентен — можно запускать без дублирования данных.
 
 Запуск:
-    docker-compose exec backend python -m scripts.seed_data.py
+    docker-compose exec backend python -m tests.db_seed_data.py
 """
 
 import logging
