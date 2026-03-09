@@ -7,11 +7,7 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from contextlib import asynccontextmanager
 
-from app.core.database import engine, Base
-from alembic.config import Config
-from alembic import command
-from alembic.script import ScriptDirectory
-from alembic.runtime.migration import MigrationContext
+from app.core.database import engine
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -32,9 +28,9 @@ async def lifespan(app: FastAPI):
         await asyncio.to_thread(check_db_connection)
         logger.info("Соединение с БД установлено")
         
-        logger.info("Применение миграций Alembic...")
-        await asyncio.to_thread(run_migrations)
-        logger.info("Миграции базы данных применены успешно")
+        # logger.info("Применение миграций Alembic...")
+        # await asyncio.to_thread(run_migrations)
+        # logger.info("Миграции базы данных применены успешно")
     except Exception as e:
         logger.error(f"Ошибка при инициализации: {e}", exc_info=True)
         raise
@@ -57,20 +53,27 @@ def check_db_connection():
 
 def run_migrations():
     """Применение миграций Alembic"""
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+    from alembic.runtime.migration import MigrationContext
+    from alembic import command
+    
     config = Config("alembic.ini")
     script = ScriptDirectory.from_config(config)
     
-    with engine.begin() as conn:
+    current_rev = None
+    with engine.connect() as conn:
         context = MigrationContext.configure(conn)
         current_rev = context.get_current_revision()
-        head_rev = script.get_current_head()
-        
-        if current_rev != head_rev:
-            logger.info(f"Обновление схемы БД: {current_rev} -> {head_rev}")
-            command.upgrade(config, "head")
-            logger.info("Схема БД обновлена")
-        else:
-            logger.info("Схема БД актуальна")
+    
+    head_rev = script.get_current_head()
+    
+    if current_rev != head_rev:
+        logger.info(f"Обновление схемы БД: {current_rev} -> {head_rev}")
+        command.upgrade(config, "head")
+        logger.info("Схема БД обновлена")
+    else:
+        logger.info("Схема БД актуальна")
 
 app = FastAPI(
     title="СУРПП",

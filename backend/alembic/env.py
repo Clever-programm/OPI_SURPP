@@ -1,7 +1,8 @@
+import os
 from logging.config import fileConfig
 from sqlalchemy import pool, engine_from_config
 from alembic import context
-from app.core.database import Base, engine
+from app.core.database import Base
 from app.models import *
 
 config = context.config
@@ -12,7 +13,10 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 def get_url():
-    return config.get_main_option("sqlalchemy.url")
+    url = os.getenv("DB_SYNC") or config.get_main_option("sqlalchemy.url")
+    if not url:
+        raise ValueError("Не найдена строка подключения к БД. Проверьте DB_SYNC или alembic.ini")
+    return url
 
 def run_migrations_offline():
     url = get_url()
@@ -27,7 +31,7 @@ def run_migrations_offline():
 
 def run_migrations_online():
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
+        {"sqlalchemy.url": get_url()},
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
