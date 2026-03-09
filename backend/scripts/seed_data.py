@@ -53,14 +53,26 @@ def check_table_empty(session: Session, model) -> bool:
     return session.query(model).count() == 0
 
 
-def get_or_create(session: Session, model, **kwargs):
-    """Получает существующую запись или создаёт новую"""
+def get_or_create(session, model, defaults=None, **kwargs):
+    """
+    Получает существующую запись или создаёт новую.
+    
+    :param session: SQLAlchemy session
+    :param model: Модель SQLAlchemy
+    :param kwargs: Поля для поиска (filter_by)
+    :param defaults: Поля для установки при создании нового объекта
+    :return: (instance, created) — кортеж с объектом и флагом создания
+    """
     instance = session.query(model).filter_by(**kwargs).first()
     if instance:
         return instance, False
-    instance = model(**kwargs)
+    
+    params = {**kwargs}
+    if defaults:
+        params.update(defaults)
+    
+    instance = model(**params)
     session.add(instance)
-    session.flush()
     return instance, True
 
 
@@ -93,11 +105,16 @@ def seed_ingredients(session: Session) -> List[Ingredient]:
     
     ingredients = []
     for data in ingredients_data:
-        ingredient, created = get_or_create(session, Ingredient, name=data["name"])
+        ingredient, created = get_or_create(
+            session, Ingredient,
+            name=data["name"],
+            defaults={
+                "unit": data["unit"],
+                "shelf_life_days": data["shelf_life_days"]
+            }
+        )
         if created:
-            ingredient.unit = data["unit"]
-            ingredient.shelf_life_days = data["shelf_life_days"]
-            logger.info(f"  + {ingredient.name}")
+            logger.info(f"  + {ingredient.name} ({ingredient.unit})")
         ingredients.append(ingredient)
     
     session.commit()
@@ -125,9 +142,12 @@ def seed_equipment(session: Session) -> List[Equipment]:
     
     equipment_list = []
     for data in equipment_data:
-        equipment, created = get_or_create(session, Equipment, name=data["name"])
+        equipment, created = get_or_create(
+            session, Equipment,
+            name=data["name"],
+            defaults={"quantity": data["quantity"]}
+        )
         if created:
-            equipment.quantity = data["quantity"]
             logger.info(f"  + {equipment.name} ({equipment.quantity} шт)")
         equipment_list.append(equipment)
     
@@ -153,9 +173,12 @@ def seed_competences(session: Session) -> List[Competence]:
     
     competences = []
     for data in competences_data:
-        competence, created = get_or_create(session, Competence, name=data["name"])
+        competence, created = get_or_create(
+            session, Competence,
+            name=data["name"],
+            defaults={"description": data.get("description")}
+        )
         if created:
-            competence.description = data["description"]
             logger.info(f"  + {competence.name}")
         competences.append(competence)
     
@@ -182,23 +205,27 @@ def seed_employees(session: Session, competences: List[Competence]) -> List[Empl
     
     employees = []
     for data in employees_data:
-        employee, created = get_or_create(session, Employee, name=data["name"])
+        employee, created = get_or_create(
+            session, Employee,
+            name=data["name"],
+            defaults={"active": True}
+        )
         if created:
-            employee.active = True
             logger.info(f"  + {employee.name}")
+            session.flush()
         employees.append(employee)
         
         # Назначаем компетенции
         for comp_name in data["competence_names"]:
             competence = next((c for c in competences if c.name == comp_name), None)
             if competence:
-                emp_comp, _ = get_or_create(
+                get_or_create(
                     session, EmployeeCompetence,
-                    employee_id=employee.employee_id,
-                    competence_id=competence.competence_id
+                    employee_id=employee.id,
+                    competence_id=competence.id
                 )
     
-    session.commit()
+    session.commit()  # Фиксируем всё разом
     logger.info(f"  ✓ Добавлено {len(employees)} сотрудников")
     return employees
 
@@ -285,6 +312,7 @@ def seed_recipes(session: Session, ingredients: List[Ingredient],
         recipe, created = get_or_create(session, Recipe, name=recipe_data["name"])
         if created:
             logger.info(f"  + {recipe.name}")
+            session.flush()
         recipes.append(recipe)
         
         # Добавляем ингредиенты рецептуры
@@ -293,8 +321,8 @@ def seed_recipes(session: Session, ingredients: List[Ingredient],
             if ingredient:
                 rec_ing, _ = get_or_create(
                     session, RecipeIngredient,
-                    recipe_id=recipe.recipe_id,
-                    ingredient_id=ingredient.ingredient_id
+                    recipe_id=recipe.id,
+                    ingredient_id=ingredient.id
                 )
                 rec_ing.quantity = ing_data["quantity"]
         
@@ -309,12 +337,12 @@ def seed_recipes(session: Session, ingredients: List[Ingredient],
                 comp = next((c for c in competences if c.name == op_data["competence_name"]), None)
             
             operation = Operation(
-                recipe_id=recipe.recipe_id,
+                recipe_id=recipe.id,
                 name=op_data["name"],
                 sequence_number=idx + 1,
                 duration_minutes=op_data["duration_minutes"],
-                equipment_id=equip.equipment_id if equip else None,
-                competence_id=comp.competence_id if comp else None
+                equipment_id=equip.id if equip else None,
+                competence_id=comp.id if comp else None
             )
             session.add(operation)
     
@@ -348,12 +376,14 @@ def seed_stock(session: Session, ingredients: List[Ingredient]) -> List[Stock]:
             data = stock_data[ing.name]
             stock, created = get_or_create(
                 session, Stock,
-                ingredient_id=ing.ingredient_id
+                ingredient_id=ing.id,
+                defaults={
+                    "quantity": data["quantity"],
+                    "received_at": datetime.now(),
+                    "expiration_date": date.today() + timedelta(days=ing.shelf_life_days)
+                }
             )
             if created:
-                stock.quantity = data["quantity"]
-                stock.received_at = datetime.now()
-                stock.expiration_date = date.today() + timedelta(days=ing.shelf_life_days - data["days_offset"])
                 logger.info(f"  + {ing.name}: {stock.quantity} {ing.unit}")
             stocks.append(stock)
     
@@ -410,13 +440,13 @@ def seed_orders(session: Session, recipes: List[Recipe]) -> List[Order]:
             session.flush()
             
             order_item = OrderItem(
-                order_id=order.order_id,
-                recipe_id=recipe.recipe_id,
+                order_id=order.id,
+                recipe_id=recipe.id,
                 quantity=order_data["quantity"]
             )
             session.add(order_item)
             orders.append(order)
-            logger.info(f"  + Заказ #{order.order_id}: {recipe.name} x{order_data['quantity']} (до {order.due_date})")
+            logger.info(f"  + Заказ #{order.id}: {recipe.name} x{order_data['quantity']} (до {order.due_date})")
     
     session.commit()
     logger.info(f"  ✓ Добавлено {len(orders)} заказов")
