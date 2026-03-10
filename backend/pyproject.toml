@@ -19,8 +19,18 @@ psycopg2 = "^2.9.11"
 pydantic-settings = "^2.13.1"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^9.0.2"
+aiosqlite = "^0.19.0"
+pytest = ">=8.0.0,<8.3.0"
 black = "^26.3.0"
+pytest-asyncio = "^0.23.0"
+httpx = "^0.26.0"
+coverage = "^7.4.0"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-v --tb=short"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
