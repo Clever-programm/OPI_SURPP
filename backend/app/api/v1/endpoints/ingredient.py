@@ -198,3 +198,22 @@ async def check_ingredient_exists(
         "name": name,
         "id": ingredient.id if ingredient else None,
     }
+
+
+@router.post(
+    "/import",
+    response_model=dict,
+    summary="Массовый импорт ингредиентов",
+    description="Парсит ингредиенты из CSV/JSON и сохраняет в БД.",
+    responses={
+        200: {"description": "Импорт выполнен успешно"},
+    }
+)
+async def import_ingredients(
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Массовый импорт ингредиентов.
+    """
+    # TODO: Реализовать парсинг CSV/JSON и массовое создание записей
+    return {"status": "ok", "imported": 0, "message": "Функционал в разработке"}

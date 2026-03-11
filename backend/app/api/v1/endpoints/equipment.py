@@ -216,3 +216,22 @@ async def delete_equipment(
     await crud_equipment.remove(db, id=equipment_id)
     
     return None
+
+
+@router.post(
+    "/import",
+    response_model=dict,
+    summary="Массовый импорт оборудования",
+    description="Парсит оборудование из CSV/JSON и сохраняет в БД.",
+    responses={
+        200: {"description": "Импорт выполнен успешно"},
+    }
+)
+async def import_equipment(
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Массовый импорт оборудования.
+    """
+    # TODO: Реализовать парсинг CSV/JSON и массовое создание записей
+    return {"status": "ok", "imported": 0, "message": "Функционал в разработке"}
