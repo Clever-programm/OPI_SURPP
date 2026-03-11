@@ -1,5 +1,15 @@
 from typing import Optional
+from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict
+
+
+class UnitType(str, Enum):
+    """Допустимые единицы измерения."""
+    KG = "кг"
+    G = "г"
+    L = "л"
+    ML = "мл"
+    PCS = "шт"
 
 
 class IngredientBase(BaseModel):
@@ -7,7 +17,7 @@ class IngredientBase(BaseModel):
     Базовая схема для ингредиента.
     """
     name: str = Field(..., min_length=2, max_length=100, description="Название ингредиента")
-    unit: str = Field(..., min_length=1, max_length=20, description="Единица измерения (кг, л, шт, г, мл)")
+    unit: UnitType = Field(..., description="Единица измерения")
     shelf_life_days: int = Field(..., gt=0, description="Срок годности в днях")
 
     model_config = ConfigDict(
@@ -32,7 +42,7 @@ class IngredientUpdate(BaseModel):
     Все поля необязательны (Partial Update).
     """
     name: Optional[str] = Field(None, min_length=2, max_length=100)
-    unit: Optional[str] = Field(None, min_length=1, max_length=20)
+    unit: Optional[UnitType] = None
     shelf_life_days: Optional[int] = Field(None, gt=0)
 
 
