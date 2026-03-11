@@ -26,6 +26,7 @@ from app.models.order import Order
 from app.models.order_item import OrderItem
 from app.models.stock import Stock
 from app.models.schedule import Schedule
+from app.core.config import settings
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
@@ -39,7 +40,10 @@ logging.basicConfig(
 logger = logging.getLogger("SEED_DATA")
 
 # Конфигурация БД
-DATABASE_URL = os.getenv("DB_SYNC")
+DATABASE_URL = (
+    f"postgresql+psycopg2://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}"
+    f"@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
+)
 engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 

@@ -7,16 +7,18 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from contextlib import asynccontextmanager
 
+from app.api.v1 import api_router
 from app.core.database import engine
+from app.core.config import settings
 
 logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    level=settings.LOG_LEVEL.upper(),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 
-logger = logging.getLogger("startup")
+logger = logging.getLogger("STARTUP")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -81,3 +83,5 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
     )
+
+app.include_router(api_router, prefix="/api/v1")

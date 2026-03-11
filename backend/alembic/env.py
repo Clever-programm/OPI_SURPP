@@ -3,6 +3,7 @@ from logging.config import fileConfig
 from sqlalchemy import pool, engine_from_config
 from alembic import context
 from app.core.database import Base
+from app.core.config import settings
 from app.models import *
 
 config = context.config
@@ -13,10 +14,13 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 def get_url():
-    url = os.getenv("DB_SYNC") or config.get_main_option("sqlalchemy.url")
-    if not url:
-        raise ValueError("Не найдена строка подключения к БД. Проверьте DB_SYNC или alembic.ini")
-    return url
+    DATABASE_URL = (
+        f"postgresql+psycopg2://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}"
+        f"@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
+    )
+    if not DATABASE_URL:
+        raise ValueError("Не найдена строка подключения к БД. Проверьте переменные окружения")
+    return DATABASE_URL
 
 def run_migrations_offline():
     url = get_url()

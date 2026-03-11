@@ -6,13 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: isurpp-backend
+    env_file:
+      - ./backend/.env
     ports:
       - "8000:8000"
-    environment:
-      - DB_URL=postgresql+asyncpg://isurpp:VPNqLf2oFANjI3o@db:5432/plannerdb
-      - DB_SYNC=postgresql+psycopg2://isurpp:VPNqLf2oFANjI3o@db:5432/plannerdb
-      - LOG_LEVEL=INFO
-      - PYTHONUNBUFFERED=1
     depends_on:
       db:
         condition: service_healthy
@@ -25,17 +22,14 @@ services:
   db:
     image: postgres:15-alpine
     container_name: isurpp-postgres
-    environment:
-      POSTGRES_DB: plannerdb
-      POSTGRES_USER: isurpp
-      POSTGRES_PASSWORD: VPNqLf2oFANjI3o
-      PGDATA: /var/lib/postgresql/data/pgdata
+    env_file:
+      - ./backend/.env
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U isurpp -d plannerdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
