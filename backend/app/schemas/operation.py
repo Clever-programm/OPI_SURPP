@@ -8,7 +8,7 @@ class OperationBase(BaseModel):
     Соответствует модели Operation.
     """
     name: str = Field(..., min_length=2, max_length=100, description="Название операции")
-    sequence_order: int = Field(..., ge=1, description="Порядковый номер в технологической цепочке")
+    sequence_number: int = Field(..., ge=1, description="Порядковый номер в технологической цепочке")
     duration_minutes: int = Field(..., ge=1, description="Длительность выполнения (мин)")
     
     # Опциональные связи с ресурсами
@@ -19,7 +19,7 @@ class OperationBase(BaseModel):
         json_schema_extra={
             "example": {
                 "name": "Замес теста",
-                "sequence_order": 1,
+                "sequence_number": 1,
                 "duration_minutes": 15,
                 "equipment_id": 3,
                 "competence_id": 2
@@ -27,12 +27,12 @@ class OperationBase(BaseModel):
         }
     )
 
-    @field_validator('sequence_order')
+    @field_validator('sequence_number')
     @classmethod
-    def validate_sequence_order(cls, v: int) -> int:
+    def validate_sequence_number(cls, v: int) -> int:
         """Валидация: порядок операций должен быть положительным."""
         if v < 1:
-            raise ValueError('sequence_order должен быть >= 1')
+            raise ValueError('sequence_number должен быть >= 1')
         return v
 
 
@@ -44,9 +44,8 @@ class OperationCreate(OperationBase):
 class OperationUpdate(BaseModel):
     """Схема для обновления операции (все поля опциональны)."""
     name: Optional[str] = Field(None, min_length=2, max_length=100)
-    sequence_order: Optional[int] = Field(None, ge=1)
+    sequence_number: Optional[int] = Field(None, ge=1)
     duration_minutes: Optional[int] = Field(None, ge=1)
-    description: Optional[str] = Field(None, max_length=500)
     equipment_id: Optional[int] = Field(None, gt=0)
     competence_id: Optional[int] = Field(None, gt=0)
 

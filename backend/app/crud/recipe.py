@@ -70,8 +70,22 @@ class CRUDRecipe(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
                     recipe_id=db_obj.id, 
                     obj_in=operation_data
                 )
-        
+            
+        # Жадная загрузка связей перед возвратом
         await db.refresh(db_obj)
+        
+        # Перезагружаем объект с отношениями через отдельный запрос
+        query = (
+            select(self.model)
+            .options(
+                selectinload(self.model.ingredients),
+                selectinload(self.model.operations)
+            )
+            .where(self.model.id == db_obj.id)
+        )
+        result = await db.execute(query)
+        db_obj = result.scalar_one()
+        
         return db_obj
 
     async def get_with_details(
@@ -354,7 +368,7 @@ class CRUDRecipe(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
         query = (
             select(Operation)
             .where(Operation.recipe_id == recipe_id)
-            .order_by(Operation.sequence_order)
+            .order_by(Operation.sequence_number)
         )
         result = await db.execute(query)
         return result.scalars().all()

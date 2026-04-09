@@ -21,14 +21,6 @@ class OrderBase(BaseModel):
         }
     )
 
-    @field_validator('due_date')
-    @classmethod
-    def validate_due_date(cls, v: date) -> date:
-        """Проверка: дата выполнения не может быть в прошлом."""
-        if v < date.today():
-            raise ValueError('Дата выполнения заказа не может быть в прошлом')
-        return v
-
 
 class OrderCreate(OrderBase):
     """
@@ -52,7 +44,6 @@ class OrderUpdate(BaseModel):
     """Схема для обновления заказа (частичное обновление)."""
     due_date: Optional[date] = None
     priority: Optional[int] = Field(None, ge=1, le=3)
-    comment: Optional[str] = Field(None, max_length=500)
 
     @field_validator('due_date')
     @classmethod

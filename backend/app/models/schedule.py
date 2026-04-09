@@ -13,8 +13,8 @@ class Schedule(Base):
     operation_id = Column(Integer, ForeignKey("operations.id"), nullable=False)
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
     employee_id = Column(Integer, ForeignKey("employees.id"), nullable=True)
-    start_time = Column(DateTime, nullable=False, index=True)
-    end_time = Column(DateTime, nullable=False)
+    start_time = Column(DateTime(timezone=True), nullable=False, index=True)
+    end_time = Column(DateTime(timezone=True), nullable=False)
     duration_minutes = Column(Integer, nullable=False)
     name = Column(String(100), nullable=True)
     

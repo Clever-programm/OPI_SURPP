@@ -12,7 +12,9 @@ class Order(Base):
     due_date = Column(Date, nullable=False, index=True)
     priority = Column(Integer, nullable=False, default=1)
     status = Column(String(20), nullable=False, default="new")
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
     
     # Связи
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")

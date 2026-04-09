@@ -53,7 +53,15 @@ class CRUDOrder(CRUDBase[Order, OrderCreate, OrderUpdate]):
                     obj_in=item_data
                 )
         
-        await db.refresh(db_obj)
+        # Жадная загрузка связей перед возвратом
+        query = (
+            select(self.model)
+            .options(selectinload(self.model.items))
+            .where(self.model.id == db_obj.id)
+        )
+        result = await db.execute(query)
+        db_obj = result.scalar_one()
+        
         return db_obj
 
     async def get_with_items(
