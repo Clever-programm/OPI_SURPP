@@ -5,6 +5,8 @@ from app.api.v1.endpoints import (
     competence,
     recipe,
     order,
+    employee,
+    stock,
 )
 
 api_router = APIRouter()
@@ -14,3 +16,5 @@ api_router.include_router(equipment.router)
 api_router.include_router(competence.router)
 api_router.include_router(recipe.router)
 api_router.include_router(order.router)
+api_router.include_router(employee.router)
+api_router.include_router(stock.router)

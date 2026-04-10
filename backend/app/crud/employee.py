@@ -191,7 +191,7 @@ class CRUDEmployee(CRUDBase[Employee, EmployeeCreate, EmployeeUpdate]):
         # Создаём связь
         db_obj = EmployeeCompetence(
             employee_id=employee_id,
-            **obj_in.model_dump()
+            **obj_in.model_dump(exclude={'employee_id'})
         )
         
         db.add(db_obj)
