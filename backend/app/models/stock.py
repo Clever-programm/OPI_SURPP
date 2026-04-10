@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Column, Integer, Float, Date, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
@@ -12,7 +12,9 @@ class Stock(Base):
     ingredient_id = Column(Integer, ForeignKey("ingredients.id"), nullable=False)
     quantity = Column(Float, nullable=False, default=0)
     expiration_date = Column(Date, nullable=True)
-    received_at = Column(DateTime, default=datetime.utcnow)
+    received_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
     
     # Связи
     ingredient = relationship("Ingredient", back_populates="stock_items")
