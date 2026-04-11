@@ -6,6 +6,7 @@ from .recipe import crud_recipe
 from .order import crud_order
 from .stock import crud_stock
 from .employee import crud_employee
+from .schedule import crud_schedule
 
 __all__ = [
     "CRUDBase",
@@ -16,4 +17,5 @@ __all__ = [
     "crud_order",
     "crud_stock",
     "crud_employee",
+    "crud_schedule",
 ]
