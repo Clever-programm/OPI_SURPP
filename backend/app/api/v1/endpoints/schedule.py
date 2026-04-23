@@ -15,6 +15,11 @@ from app.schemas.schedule import (
     ScheduleGenerateResponse,
     ScheduleConflict,
 )
+from app.models.equipment import Equipment
+from app.models.employee import Employee
+from app.models.order import Order
+from sqlalchemy import select
+from collections import defaultdict
 
 router = APIRouter(prefix="/schedule", tags=["schedule"])
 
@@ -120,9 +125,6 @@ async def get_schedule_calendar(
     )
     
     # Группировка по дням
-    from collections import defaultdict
-    from datetime import datetime
-    
     calendar = defaultdict(list)
     for item in result["items"]:
         day_key = item.start_time.date().isoformat()
@@ -169,8 +171,6 @@ async def get_equipment_schedule(
     - Проверка существования оборудования
     - Сортировка по времени начала
     """
-    from app.models.equipment import Equipment
-    from sqlalchemy import select
     
     equipment_query = select(Equipment).where(Equipment.id == equipment_id)
     equipment_result = await db.execute(equipment_query)
@@ -215,8 +215,6 @@ async def get_employee_schedule(
     - Проверка существования сотрудника
     - Сортировка по времени начала
     """
-    from app.models.employee import Employee
-    from sqlalchemy import select
     
     employee_query = select(Employee).where(Employee.id == employee_id)
     employee_result = await db.execute(employee_query)
@@ -258,8 +256,6 @@ async def get_order_schedule(
     - Проверка существования заказа
     - Сортировка по времени начала (последовательность операций)
     """
-    from app.models.order import Order
-    from sqlalchemy import select
     
     order_query = select(Order).where(Order.id == order_id)
     order_result = await db.execute(order_query)
@@ -332,6 +328,98 @@ async def get_schedule(
 
 
 @router.get(
+    "/load/equipment/{equipment_id}",
+    response_model=dict,
+    summary="Загрузка оборудования за период",
+    description="Рассчитывает процент загрузки оборудования за указанный период.",
+    responses={
+        200: {"description": "Успешный ответ со статистикой"},
+        422: {"description": "Ошибка валидации данных"},
+    }
+)
+async def get_equipment_load(
+    equipment_id: int,
+    start_date: date = Query(..., description="Дата начала периода"),
+    end_date: date = Query(..., description="Дата окончания периода"),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Получить статистику загрузки оборудования.
+    
+    Бизнес-логика:
+    - Суммарное время операций за период
+    - Расчёт процента от доступного времени (8 часов/день)
+    - Используется для выявления узких мест производства
+    """
+    return await crud_schedule.get_equipment_load(
+        db,
+        equipment_id=equipment_id,
+        start_date=start_date,
+        end_date=end_date
+    )
+
+
+@router.get(
+    "/load/employee/{employee_id}",
+    response_model=dict,
+    summary="Загрузка сотрудника за период",
+    description="Рассчитывает процент загрузки сотрудника за указанный период.",
+    responses={
+        200: {"description": "Успешный ответ со статистикой"},
+        422: {"description": "Ошибка валидации данных"},
+    }
+)
+async def get_employee_load(
+    employee_id: int,
+    start_date: date = Query(..., description="Дата начала периода"),
+    end_date: date = Query(..., description="Дата окончания периода"),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Получить статистику загрузки сотрудника.
+    
+    Бизнес-логика:
+    - Суммарное время операций за период
+    - Расчёт процента от доступного времени (8 часов/день)
+    - Используется для равномерного распределения нагрузки
+    """
+    return await crud_schedule.get_employee_load(
+        db,
+        employee_id=employee_id,
+        start_date=start_date,
+        end_date=end_date
+    )
+
+
+@router.post(
+    "/",
+    response_model=ScheduleRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Добавить запись в расписание",
+    description="Создаёт новую запись в производственном расписании (ручное добавление операции).",
+    responses={
+        201: {"description": "Запись успешно добавлена"},
+        400: {"description": "Ошибка валидации времени"},
+        404: {"description": "Связанный объект не найден"},
+        422: {"description": "Ошибка валидации данных"},
+    }
+)
+async def create_schedule(
+    obj_in: ScheduleCreate,
+    db: AsyncSession = Depends(get_db),
+) -> ScheduleRead:
+    """
+    Создать новую запись в расписании.
+    
+    Бизнес-логика:
+    - Проверка: end_time > start_time
+    - Валидация существования operation_id, order_id, equipment_id, employee_id
+    - Используется для ручной корректировки плана после автогенерации
+    """
+    return await crud_schedule.create(db, obj_in=obj_in)
+
+
+@router.get(
     "/{schedule_id}",
     response_model=ScheduleWithDetails,
     summary="Получить запись расписания с деталями",
@@ -361,34 +449,6 @@ async def get_schedule_detail(
         )
     
     return schedule
-
-
-@router.post(
-    "/",
-    response_model=ScheduleRead,
-    status_code=status.HTTP_201_CREATED,
-    summary="Добавить запись в расписание",
-    description="Создаёт новую запись в производственном расписании (ручное добавление операции).",
-    responses={
-        201: {"description": "Запись успешно добавлена"},
-        400: {"description": "Ошибка валидации времени"},
-        404: {"description": "Связанный объект не найден"},
-        422: {"description": "Ошибка валидации данных"},
-    }
-)
-async def create_schedule(
-    obj_in: ScheduleCreate,
-    db: AsyncSession = Depends(get_db),
-) -> ScheduleRead:
-    """
-    Создать новую запись в расписании.
-    
-    Бизнес-логика:
-    - Проверка: end_time > start_time
-    - Валидация существования operation_id, order_id, equipment_id, employee_id
-    - Используется для ручной корректировки плана после автогенерации
-    """
-    return await crud_schedule.create(db, obj_in=obj_in)
 
 
 @router.put(
@@ -458,67 +518,3 @@ async def delete_schedule(
         )
     
     return None
-
-
-@router.get(
-    "/load/equipment/{equipment_id}",
-    response_model=dict,
-    summary="Загрузка оборудования за период",
-    description="Рассчитывает процент загрузки оборудования за указанный период.",
-    responses={
-        200: {"description": "Успешный ответ со статистикой"},
-        422: {"description": "Ошибка валидации данных"},
-    }
-)
-async def get_equipment_load(
-    equipment_id: int,
-    start_date: date = Query(..., description="Дата начала периода"),
-    end_date: date = Query(..., description="Дата окончания периода"),
-    db: AsyncSession = Depends(get_db),
-) -> dict:
-    """
-    Получить статистику загрузки оборудования.
-    
-    Бизнес-логика:
-    - Суммарное время операций за период
-    - Расчёт процента от доступного времени (8 часов/день)
-    - Используется для выявления узких мест производства
-    """
-    return await crud_schedule.get_equipment_load(
-        db,
-        equipment_id=equipment_id,
-        start_date=start_date,
-        end_date=end_date
-    )
-
-
-@router.get(
-    "/load/employee/{employee_id}",
-    response_model=dict,
-    summary="Загрузка сотрудника за период",
-    description="Рассчитывает процент загрузки сотрудника за указанный период.",
-    responses={
-        200: {"description": "Успешный ответ со статистикой"},
-        422: {"description": "Ошибка валидации данных"},
-    }
-)
-async def get_employee_load(
-    employee_id: int,
-    start_date: date = Query(..., description="Дата начала периода"),
-    end_date: date = Query(..., description="Дата окончания периода"),
-    db: AsyncSession = Depends(get_db),
-) -> dict:
-    """
-    Получить статистику загрузки сотрудника.
-    
-    Бизнес-логика:
-    - Суммарное время операций за период
-    - Расчёт процента от доступного времени (8 часов/день)
-    - Используется для равномерного распределения нагрузки
-    """
-    return await crud_schedule.get_employee_load(
-        db,
-        employee_id=employee_id,
-        start_date=start_date,
-        end_date=end_date
-    )

@@ -18,6 +18,7 @@ from app.schemas.employee_competence import (
     EmployeeCompetenceCreate,
     EmployeeCompetenceRead,
 )
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
@@ -227,6 +228,10 @@ async def delete_employee(
     
     return None
 
+class EmployeeActiveUpdate(BaseModel):
+    """Схема для обновления статуса активности сотрудника."""
+    active: bool
+
 @router.patch(
     "/{employee_id}/active",
     response_model=EmployeeRead,
@@ -240,7 +245,7 @@ async def delete_employee(
 )
 async def update_employee_active(
     employee_id: int,
-    active: bool = Query(..., description="Новый статус активности"),
+    obj_in: EmployeeActiveUpdate,
     db: AsyncSession = Depends(get_db),
 ) -> EmployeeRead:
     """
@@ -258,7 +263,7 @@ async def update_employee_active(
             detail=f"Сотрудник с ID {employee_id} не найден"
         )
     
-    employee.active = active
+    employee.active = obj_in.active
     await db.commit()
     await db.refresh(employee)
     
@@ -298,11 +303,18 @@ async def get_employee_competences(
     # enrich с названием компетенции
     
     result_list = []
-    for comp_link in competences:
-        comp_query = select(Competence).where(Competence.id == comp_link.competence_id)
+    
+    # Собираем все ID компетенций и делаем один запрос вместо N
+    comp_ids = [comp_link.competence_id for comp_link in competences]
+    if comp_ids:
+        comp_query = select(Competence).where(Competence.id.in_(comp_ids))
         comp_result = await db.execute(comp_query)
-        comp = comp_result.scalar_one_or_none()
-        
+        comp_map = {c.id: c for c in comp_result.scalars().all()}
+    else:
+        comp_map = {}
+    
+    for comp_link in competences:
+        comp = comp_map.get(comp_link.competence_id)
         result_list.append(EmployeeCompetenceRead(
             id=comp_link.id,
             employee_id=comp_link.employee_id,

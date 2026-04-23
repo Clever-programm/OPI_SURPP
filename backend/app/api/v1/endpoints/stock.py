@@ -14,6 +14,10 @@ from app.schemas.stock import (
     StockCheckResponse,
     StockExpiringResponse,
 )
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from app.models.recipe import Recipe
+from app.models.recipe_ingredient import RecipeIngredient
 
 router = APIRouter(prefix="/stock", tags=["stock"])
 
@@ -225,11 +229,6 @@ async def calculate_requirement(
     """
     Рассчитать потребность в ингредиентах для производства.
     """
-    from sqlalchemy.orm import selectinload
-    from sqlalchemy import select
-    from app.models.recipe import Recipe
-    from app.models.recipe_ingredient import RecipeIngredient
-
     
     # Жадная загрузка рецептуры с ингредиентами и вложенными ингредиентами
     query = (
@@ -299,7 +298,7 @@ async def get_stock_by_ingredient(
     "/{ingredient_id}/total",
     response_model=dict,
     summary="Получить общее количество ингредиента",
-    description="Возвращает суммарное количество ингредиента across всех партий.",
+    description="Возвращает суммарное количество ингредиента по всем партиям.",
     responses={
         200: {"description": "Успешный ответ с общим количеством"},
     }

@@ -35,7 +35,7 @@ async def get_orders(
     limit: int = Query(default=50, ge=1, le=100, description="Количество записей на странице"),
     sort_by: Optional[str] = Query(default="due_date", description="Поле для сортировки"),
     sort_order: str = Query(default="asc", regex="^(asc|desc)$", description="Порядок сортировки"),
-    status: Optional[str] = Query(default=None, description="Фильтр по статусу"),
+    order_status: Optional[str] = Query(default=None, description="Фильтр по статусу"),
     due_date_from: Optional[date] = Query(default=None, description="Дата выполнения от"),
     due_date_to: Optional[date] = Query(default=None, description="Дата выполнения до"),
 ) -> dict:
@@ -44,8 +44,8 @@ async def get_orders(
     """
     #TODO: Фильтр по дате от и до
     filters = {}
-    if status:
-        filters["status"] = status
+    if order_status:
+        filters["status"] = order_status
     
     result = await crud_order.get_multi(
         db,
