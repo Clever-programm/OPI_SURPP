@@ -84,7 +84,6 @@ class ScheduleUpdate(BaseModel):
 class ScheduleGenerateRequest(BaseModel):
     """
     Запрос на формирование производственного расписания.
-    ⚠️ Алгоритм генерации реализован как заглушка.
     """
     start_date: date = Field(..., description="Дата начала планирования")
     end_date: date = Field(..., description="Дата окончания планирования")
@@ -94,6 +93,7 @@ class ScheduleGenerateRequest(BaseModel):
         pattern="^(due_date|priority|created_at)$",
         description="Критерий приоритета"
     )
+    dry_run: bool = Field(default=False, description="Если True, расписание не будет сохранено в БД")
     
     model_config = ConfigDict(
         json_schema_extra={
@@ -126,25 +126,25 @@ class ScheduleConflict(BaseModel):
         pattern="^(equipment|employee|ingredient|sequence)$",
         description="Тип конфликта"
     )
-    description: str = Field(..., description="Описание конфликта")
     resource_id: Optional[int] = Field(None, description="ID ресурса")
-    resource_name: str = Field(..., description="Название ресурса")
-    time_slot: datetime = Field(..., description="Временной слот конфликта")
+    resource_name: Optional[str] = Field(None, description="Название ресурса")
+    time_slot: Optional[datetime] = Field(None, description="Временной слот конфликта")
     affected_orders: List[int] = Field(default_factory=list, description="ID затронутых заказов")
+    message: str = Field(..., description="Сообщение об ошибке/конфликте")
 
 
 class ScheduleGenerateResponse(BaseModel):
     """
     Ответ на запрос генерации расписания.
-    
-    ⚠️ Алгоритм реализован как заглушка — возвращает mock-данные.
     """
     success: bool = Field(..., description="Успешно ли сформировано расписание")
     schedule_id: Optional[int] = Field(None, description="ID сформированного плана")
     orders_planned: int = Field(default=0, description="Количество запланированных заказов")
     orders_failed: int = Field(default=0, description="Количество неудачных заказов")
+    scheduled_count: int = Field(default=0, description="Общее количество запланированных операций")
     conflicts: List[ScheduleConflict] = Field(default_factory=list, description="Список конфликтов")
     generated_at: datetime = Field(default_factory=datetime.now, description="Время генерации")
+    message: Optional[str] = Field(None, description="Дополнительное сообщение")
 
 
 class ScheduleWithDetails(ScheduleRead):

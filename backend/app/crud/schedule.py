@@ -29,7 +29,7 @@ class CRUDSchedule(CRUDBase[Schedule, ScheduleCreate, ScheduleUpdate]):
         query = (
             select(self.model)
             .options(
-                selectinload(self.model.operation),
+                selectinload(self.model.operation).selectinload(Operation.recipe),
                 selectinload(self.model.order),
                 selectinload(self.model.equipment),
                 selectinload(self.model.employee)
@@ -55,7 +55,7 @@ class CRUDSchedule(CRUDBase[Schedule, ScheduleCreate, ScheduleUpdate]):
         query = (
             select(self.model)
             .options(
-                selectinload(self.model.operation),
+                selectinload(self.model.operation).selectinload(Operation.recipe),
                 selectinload(self.model.order),
                 selectinload(self.model.equipment),
                 selectinload(self.model.employee)
@@ -252,6 +252,58 @@ class CRUDSchedule(CRUDBase[Schedule, ScheduleCreate, ScheduleUpdate]):
         result = await db.execute(query)
         return result.scalars().all()
     
+    async def get_equipment_load(
+        self, 
+        db: AsyncSession, 
+        *, 
+        equipment_id: int,
+        start_date: date,
+        end_date: date
+    ) -> dict:
+        """Рассчитать загрузку оборудования (в процентах от 8-часового рабочего дня)."""
+        entries = await self.get_by_equipment(db, equipment_id=equipment_id, start_date=start_date, end_date=end_date)
+        total_minutes = sum(e.duration_minutes for e in entries)
+        
+        days = max((end_date - start_date).days + 1, 1)
+        available_minutes = days * 8 * 60
+        load_percent = (total_minutes / available_minutes * 100) if available_minutes > 0 else 0
+        
+        return {
+            "resource_id": equipment_id,
+            "resource_type": "equipment",
+            "total_minutes": total_minutes,
+            "available_minutes": available_minutes,
+            "load_percent": round(load_percent, 2),
+            "entries_count": len(entries),
+            "period": {"start": start_date, "end": end_date}
+        }
+
+    async def get_employee_load(
+        self, 
+        db: AsyncSession, 
+        *, 
+        employee_id: int,
+        start_date: date,
+        end_date: date
+    ) -> dict:
+        """Рассчитать загрузку сотрудника (в процентах от 8-часового рабочего дня)."""
+        entries = await self.get_by_employee(db, employee_id=employee_id, start_date=start_date, end_date=end_date)
+        total_minutes = sum(e.duration_minutes for e in entries)
+        
+        days = max((end_date - start_date).days + 1, 1)
+        available_minutes = days * 8 * 60
+        load_percent = (total_minutes / available_minutes * 100) if available_minutes > 0 else 0
+        
+        return {
+            "resource_id": employee_id,
+            "resource_type": "employee",
+            "total_minutes": total_minutes,
+            "available_minutes": available_minutes,
+            "load_percent": round(load_percent, 2),
+            "entries_count": len(entries),
+            "period": {"start": start_date, "end": end_date}
+        }
+
     async def _validate_relations(self, db: AsyncSession, obj_in, exclude_current: bool = False):
         """Проверить существование связанных объектов."""
         if hasattr(obj_in, 'operation_id') and obj_in.operation_id:

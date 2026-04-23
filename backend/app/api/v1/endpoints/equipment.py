@@ -29,7 +29,7 @@ async def get_equipment_list(
     page: int = Query(default=1, ge=1, description="Номер страницы"),
     limit: int = Query(default=50, ge=1, le=100, description="Количество записей на странице"),
     sort_by: Optional[str] = Query(default="name", description="Поле для сортировки"),
-    sort_order: str = Query(default="asc", regex="^(asc|desc)$", description="Порядок сортировки"),
+    sort_order: str = Query(default="asc", pattern="^(asc|desc)$", description="Порядок сортировки"),
     name: Optional[str] = Query(default=None, description="Фильтр по названию"),
 ) -> dict:
     """

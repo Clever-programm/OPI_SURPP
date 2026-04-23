@@ -34,7 +34,7 @@ async def get_orders(
     page: int = Query(default=1, ge=1, description="Номер страницы"),
     limit: int = Query(default=50, ge=1, le=100, description="Количество записей на странице"),
     sort_by: Optional[str] = Query(default="due_date", description="Поле для сортировки"),
-    sort_order: str = Query(default="asc", regex="^(asc|desc)$", description="Порядок сортировки"),
+    sort_order: str = Query(default="asc", pattern="^(asc|desc)$", description="Порядок сортировки"),
     order_status: Optional[str] = Query(default=None, description="Фильтр по статусу"),
     due_date_from: Optional[date] = Query(default=None, description="Дата выполнения от"),
     due_date_to: Optional[date] = Query(default=None, description="Дата выполнения до"),

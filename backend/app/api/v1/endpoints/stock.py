@@ -108,7 +108,7 @@ async def get_stock_history(
     page: int = Query(default=1, ge=1, description="Номер страницы"),
     limit: int = Query(default=50, ge=1, le=100, description="Количество записей на странице"),
     ingredient_id: Optional[int] = Query(default=None, description="Фильтр по ингредиенту"),
-    operation_type: Optional[str] = Query(default=None, regex="^(receive|write-off)$", description="Тип операции"),
+    operation_type: Optional[str] = Query(default=None, pattern="^(receive|write-off)$", description="Тип операции"),
     date_from: Optional[date] = Query(default=None, description="Дата от"),
     date_to: Optional[date] = Query(default=None, description="Дата до"),
 ) -> dict:
