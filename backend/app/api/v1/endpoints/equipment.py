@@ -24,7 +24,7 @@ router = APIRouter(prefix="/equipment", tags=["equipment"])
         200: {"description": "Успешный ответ со списком оборудования"},
     }
 )
-async def get_equipment(
+async def get_equipment_list(
     db: AsyncSession = Depends(get_db),
     page: int = Query(default=1, ge=1, description="Номер страницы"),
     limit: int = Query(default=50, ge=1, le=100, description="Количество записей на странице"),

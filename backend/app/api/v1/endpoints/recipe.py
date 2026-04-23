@@ -19,6 +19,12 @@ from app.schemas.operation import (
     OperationRead,
     OperationUpdate,
 )
+from pydantic import BaseModel, Field
+
+
+class RecipeIngredientQuantityUpdate(BaseModel):
+    """Схема для обновления количества ингредиента в рецептуре."""
+    quantity: float = Field(..., gt=0, description="Новое количество ингредиента")
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -257,7 +263,7 @@ async def add_ingredient_to_recipe(
 async def update_ingredient_in_recipe(
     recipe_id: int,
     ingredient_link_id: int,
-    quantity: float = Query(..., gt=0, description="Новое количество ингредиента"),
+    obj_in: RecipeIngredientQuantityUpdate,
     db: AsyncSession = Depends(get_db),
 ) -> RecipeIngredientRead:
     """
@@ -275,7 +281,7 @@ async def update_ingredient_in_recipe(
         db,
         recipe_id=recipe_id,
         ingredient_link_id=ingredient_link_id,
-        quantity=quantity
+        quantity=obj_in.quantity
     )
 
 
