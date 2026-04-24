@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  # nginx:
+  #   image: nginx:latest
+  #   container_name: nginx_proxy
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - backend
+  #     - frontend
+  
+  # frontend:
+  #   ...
+
   backend:
     build:
       context: .
