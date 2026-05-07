@@ -4,23 +4,22 @@ import os
 import sys
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from contextlib import asynccontextmanager
 
-from app.core.database import engine, Base
-from alembic.config import Config
-from alembic import command
-from alembic.script import ScriptDirectory
-from alembic.runtime.migration import MigrationContext
+from app.api.v1 import api_router
+from app.core.database import engine
+from app.core.config import settings
 
 logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    level=settings.LOG_LEVEL.upper(),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 
-logger = logging.getLogger("startup")
+logger = logging.getLogger("STARTUP")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -57,20 +56,27 @@ def check_db_connection():
 
 def run_migrations():
     """Применение миграций Alembic"""
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+    from alembic.runtime.migration import MigrationContext
+    from alembic import command
+    
     config = Config("alembic.ini")
     script = ScriptDirectory.from_config(config)
     
-    with engine.begin() as conn:
+    current_rev = None
+    with engine.connect() as conn:
         context = MigrationContext.configure(conn)
         current_rev = context.get_current_revision()
-        head_rev = script.get_current_head()
-        
-        if current_rev != head_rev:
-            logger.info(f"Обновление схемы БД: {current_rev} -> {head_rev}")
-            command.upgrade(config, "head")
-            logger.info("Схема БД обновлена")
-        else:
-            logger.info("Схема БД актуальна")
+    
+    head_rev = script.get_current_head()
+    
+    if current_rev != head_rev:
+        logger.info(f"Обновление схемы БД: {current_rev} -> {head_rev}")
+        command.upgrade(config, "head")
+        logger.info("Схема БД обновлена")
+    else:
+        logger.info("Схема БД актуальна")
 
 app = FastAPI(
     title="СУРПП",
@@ -78,3 +84,14 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
     )
+
+# CORS — разрешаем запросы с фронтенда (Vite dev-сервер)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost", "http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(api_router, prefix="/api/v1")
