@@ -1,5 +1,11 @@
 FROM python:3.12-slim
 
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    POETRY_VERSION=1.8.2 \
+    POETRY_VIRTUALENVS_CREATE=false \
+    POETRY_NO_INTERACTION=1
+
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
@@ -9,18 +15,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Установка Poetry
-RUN pip install poetry
+RUN pip install "poetry==$POETRY_VERSION"
 RUN poetry config virtualenvs.create false
 
 WORKDIR /app
 
-COPY backend/pyproject.toml backend/poetry.lock ./
+COPY pyproject.toml poetry.lock ./
 
-RUN poetry install --only main
+RUN poetry install --only main --no-root
 
-COPY backend ./backend
-
-WORKDIR /app/backend
+COPY . .
 
 EXPOSE 8000
 
