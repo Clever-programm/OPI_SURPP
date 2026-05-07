@@ -21,23 +21,7 @@
   font-weight: 600;
 }
 
-.btn-create {
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  padding: 10px 22px;
-  border-radius: var(--radius-md);
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: var(--font-family);
-  transition: all 0.2s;
-}
 
-.btn-create:hover {
-  background: #388E3C;
-  transform: translateY(-1px);
-}
 
 /* Create form */
 .order-form {
@@ -83,22 +67,7 @@
   border-color: var(--color-primary);
 }
 
-.btn-submit {
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  padding: 10px 28px;
-  border-radius: var(--radius-md);
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: var(--font-family);
-  transition: all 0.2s;
-}
 
-.btn-submit:hover {
-  background: #388E3C;
-}
 
 .btn-submit:disabled {
   opacity: 0.6;

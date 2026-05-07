@@ -1,2 +1,79 @@
-/* RecipesPage — uses shared EntityPages.css */
 @import './EntityPages.css';
+
+.detail-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.btn-delete-tiny {
+  background: transparent;
+  border: none;
+  color: #ff5252;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.btn-delete-tiny:hover {
+  background: #ffebee;
+}
+
+.detail-add-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--color-border);
+}
+
+.detail-add-form select, 
+.detail-add-form input {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.btn-add-tiny {
+  background: var(--color-primary-gradient);
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-add-tiny:hover {
+  transform: scale(1.05);
+  filter: brightness(1.05);
+  box-shadow: 0 4px 8px rgba(255, 145, 77, 0.2);
+}
+
+.detail-add-form-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--color-border);
+}
+
+.form-mini-row {
+  display: flex;
+  gap: 8px;
+}
+
+.form-mini-row select, 
+.form-mini-row input {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+

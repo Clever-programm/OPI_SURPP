@@ -39,9 +39,13 @@ class CRUDStock:
         Returns:
             Объект Stock или None
         """
-        query = select(Stock).where(Stock.ingredient_id == ingredient_id)
+        query = (
+            select(Stock)
+            .where(and_(Stock.ingredient_id == ingredient_id, Stock.quantity > 0))
+            .order_by(Stock.received_at.asc())
+        )
         result = await db.execute(query)
-        return result.scalar_one_or_none()
+        return result.scalars().first()
 
     async def get_all_stock(
         self, 
@@ -66,8 +70,8 @@ class CRUDStock:
             Словарь с данными и мета-информацией
         """
         
-        query = select(Stock).options(selectinload(Stock.ingredient))
-        count_query = select(func.count()).select_from(Stock)
+        query = select(Stock).options(selectinload(Stock.ingredient)).where(Stock.quantity > 0)
+        count_query = select(func.count()).select_from(Stock).where(Stock.quantity > 0)
         
         # Фильтр по ингредиенту
         if ingredient_id:
@@ -137,21 +141,7 @@ class CRUDStock:
     ) -> Stock:
         """
         Зарегистрировать поступление сырья на склад.
-        
-        Бизнес-логика:
-        - Проверка срока годности (не может быть в прошлом)
-        - Если запись уже есть — обновляем количество и срок
-        - Если нет — создаём новую запись
-        
-        Args:
-            db: Сессия базы данных
-            obj_in: Схема поступления
-        
-        Returns:
-            Обновлённый/созданный объект Stock
-        
-        Raises:
-            HTTPException 400: Если срок годности в прошлом
+        Всегда создаёт новую запись (партию) для точного учёта сроков годности.
         """
         # Валидация срока годности
         if obj_in.expiration_date < date.today():
@@ -160,23 +150,13 @@ class CRUDStock:
                 detail="Срок годности не может быть в прошлом"
             )
         
-        # Проверяем существующую запись
-        stock = await self.get_stock_by_ingredient(db, ingredient_id=obj_in.ingredient_id)
-        
-        if stock:
-            # Обновляем существующую запись
-            stock.quantity += obj_in.quantity
-            # Обновляем срок годности, если новая партия свежее
-            if obj_in.expiration_date > (stock.expiration_date or date.today()):
-                stock.expiration_date = obj_in.expiration_date
-        else:
-            # Создаём новую запись
-            stock = Stock(
-                ingredient_id=obj_in.ingredient_id,
-                quantity=obj_in.quantity,
-                expiration_date=obj_in.expiration_date
-            )
-            db.add(stock)
+        # Создаём новую запись для каждой партии
+        stock = Stock(
+            ingredient_id=obj_in.ingredient_id,
+            quantity=obj_in.quantity,
+            expiration_date=obj_in.expiration_date
+        )
+        db.add(stock)
         
         await db.commit()
         await db.refresh(stock)
@@ -191,52 +171,67 @@ class CRUDStock:
     ) -> Stock:
         """
         Зарегистрировать списание сырья со склада.
-        
-        Бизнес-логика:
-        - Проверка достаточности количества (нельзя списать больше, чем есть)
-        - Списание по FIFO (сначала партии с ближайшим сроком годности)
-        - Ведение истории операций (опционально)
-        
-        Args:
-            db: Сессия базы данных
-            obj_in: Схема списания
-        
-        Returns:
-            Обновлённый объект Stock
-        
-        Raises:
-            HTTPException 409: Если недостаточно сырья на складе
-            HTTPException 404: Если ингредиент не найден на складе
+        Логика:
+        1. Если указан stock_id — списываем из конкретной партии.
+        2. Если не указан — списываем по FIFO (по дате поступления).
         """
-        # Получаем складской остаток
-        stock = await self.get_stock_by_ingredient(db, ingredient_id=obj_in.ingredient_id)
+        if obj_in.stock_id:
+            # Списание из конкретной партии
+            query = select(Stock).where(and_(Stock.id == obj_in.stock_id, Stock.ingredient_id == obj_in.ingredient_id))
+            result = await db.execute(query)
+            batch = result.scalar_one_or_none()
+            
+            if not batch:
+                raise HTTPException(status_code=404, detail=f"Партия ID {obj_in.stock_id} для этого ингредиента не найдена")
+            
+            if batch.quantity < obj_in.quantity:
+                raise HTTPException(status_code=409, detail=f"В выбранной партии недостаточно сырья. Доступно: {batch.quantity}")
+            
+            batch.quantity -= obj_in.quantity
+            await db.commit()
+            await db.refresh(batch)
+            return batch
+
+        # Иначе — классический FIFO по дате поступления
+        total_available = await self.get_total_quantity(db, ingredient_id=obj_in.ingredient_id)
         
-        if not stock:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Ингредиент ID {obj_in.ingredient_id} не найден на складе"
-            )
-        
-        # Проверка достаточности
-        if stock.quantity < obj_in.quantity:
+        if total_available < obj_in.quantity:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Недостаточно сырья. Доступно: {stock.quantity}, требуется: {obj_in.quantity}"
+                detail=f"Недостаточно сырья. Доступно: {total_available}, требуется: {obj_in.quantity}"
             )
         
-        # Списание
-        stock.quantity -= obj_in.quantity
+        # Сортируем по дате поступления (старые первыми)
+        query = (
+            select(Stock)
+            .where(and_(Stock.ingredient_id == obj_in.ingredient_id, Stock.quantity > 0))
+            .order_by(Stock.received_at.asc())
+        )
+        result = await db.execute(query)
+        batches = result.scalars().all()
         
-        # Если количество стало 0 — можно удалить запись (опционально)
-        # if stock.quantity == 0:
-        #     await db.delete(stock)
-        # else:
-        #     ...
+        remaining_to_write_off = obj_in.quantity
+        last_updated_stock = None
+        
+        for batch in batches:
+            if remaining_to_write_off <= 0:
+                break
+                
+            if batch.quantity <= remaining_to_write_off:
+                remaining_to_write_off -= batch.quantity
+                batch.quantity = 0
+            else:
+                batch.quantity -= remaining_to_write_off
+                remaining_to_write_off = 0
+            
+            last_updated_stock = batch
         
         await db.commit()
-        await db.refresh(stock)
+        if last_updated_stock:
+            await db.refresh(last_updated_stock)
+            return last_updated_stock
         
-        return stock
+        raise HTTPException(status_code=404, detail="Партии для списания не найдены")
 
     async def write_off_for_order(
         self, 

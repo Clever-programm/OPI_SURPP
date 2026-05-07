@@ -56,6 +56,7 @@ class StockWriteOff(BaseModel):
     """
     ingredient_id: int = Field(..., gt=0, description="ID ингредиента")
     quantity: float = Field(..., gt=0, description="Количество для списания")
+    stock_id: Optional[int] = Field(None, gt=0, description="ID конкретной партии (опционально)")
     order_id: Optional[int] = Field(None, gt=0, description="ID заказа (если списание для производства)")
 
     model_config = ConfigDict(

@@ -204,6 +204,7 @@ function WarehousePage() {
                   <th>Ед. изм.</th>
                   <th>Срок годности</th>
                   <th>Поступление</th>
+                  <th>Действия</th>
                 </tr>
               </thead>
               <tbody>
@@ -227,12 +228,41 @@ function WarehousePage() {
                         ) : '—'}
                       </td>
                       <td>{formatDateTime(item.received_at)}</td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button 
+                          className="btn-action-small"
+                          title="Списать из этой партии"
+                          onClick={() => {
+                            const qty = prompt(`Сколько списать из этой партии? (Доступно: ${item.quantity})`, item.quantity);
+                            if (qty && !isNaN(qty) && qty > 0) {
+                              const doWriteOff = async () => {
+                                setSubmitting(true);
+                                try {
+                                  await stockApi.writeOff({
+                                    ingredient_id: item.ingredient_id,
+                                    quantity: Number(qty),
+                                    stock_id: item.id
+                                  });
+                                  loadData();
+                                } catch (err) {
+                                  alert('Ошибка: ' + err.message);
+                                } finally {
+                                  setSubmitting(false);
+                                }
+                              };
+                              doWriteOff();
+                            }
+                          }}
+                        >
+                          Вычесть
+                        </button>
+                      </td>
                     </tr>
                   )
                 })}
                 {stockItems.length === 0 && (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: 30, color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: 30, color: 'var(--color-text-muted)', fontWeight: 600 }}>
                       Склад пуст
                     </td>
                   </tr>

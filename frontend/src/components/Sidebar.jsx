@@ -17,7 +17,7 @@ function Sidebar() {
   return (
     <aside className="sidebar" id="sidebar">
       <div className="sidebar-logo">
-        <span className="sidebar-logo-text">Название</span>
+        <span className="sidebar-logo-text">СУРПП</span>
       </div>
 
       <nav className="sidebar-nav">
@@ -37,17 +37,7 @@ function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
-        <button className="sidebar-logout" id="btn-logout">
-          Выход
-        </button>
-        <div className="sidebar-footer-icons">
-          <span className="sidebar-icon sidebar-icon--weather" title="Погода">
-            💧
-          </span>
-          <span className="sidebar-icon sidebar-icon--settings" title="Настройки">
-            ⚙️
-          </span>
-        </div>
+        {/* Footer content removed per user request */}
       </div>
     </aside>
   )

@@ -3,7 +3,7 @@
  * Все запросы проксируются через /api/v1.
  */
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = '/api/v1';
 
 /**
  * Обёртка над fetch с обработкой ошибок и JSON-парсингом.
@@ -34,12 +34,20 @@ async function request(endpoint, options = {}) {
   // Ошибки сервера
   if (!response.ok) {
     let errorData;
+    let message = 'Произошла ошибка';
     try {
       errorData = await response.json();
+      if (typeof errorData.detail === 'string') {
+        message = errorData.detail;
+      } else if (Array.isArray(errorData.detail)) {
+        // Форматируем ошибки валидации FastAPI
+        message = errorData.detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join('\n');
+      }
     } catch {
       errorData = { detail: response.statusText };
+      message = response.statusText || message;
     }
-    const error = new Error(errorData.detail || 'Произошла ошибка');
+    const error = new Error(message);
     error.status = response.status;
     error.data = errorData;
     throw error;

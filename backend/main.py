@@ -31,9 +31,9 @@ async def lifespan(app: FastAPI):
         await asyncio.to_thread(check_db_connection)
         logger.info("Соединение с БД установлено")
         
-        # logger.info("Применение миграций Alembic...")
-        # await asyncio.to_thread(run_migrations)
-        # logger.info("Миграции базы данных применены успешно")
+        logger.info("Применение миграций Alembic...")
+        await asyncio.to_thread(run_migrations)
+        logger.info("Миграции базы данных применены успешно")
     except Exception as e:
         logger.error(f"Ошибка при инициализации: {e}", exc_info=True)
         raise
@@ -88,7 +88,7 @@ app = FastAPI(
 # CORS — разрешаем запросы с фронтенда (Vite dev-сервер)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["http://localhost", "http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

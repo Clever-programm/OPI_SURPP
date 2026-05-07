@@ -9,7 +9,7 @@ import os
 from datetime import datetime, date, timedelta
 from typing import List
 
-sys.path.insert(0, '/app/backend')
+sys.path.insert(0, '/app')
 
 from app.models.ingredient import Ingredient
 from app.models.equipment import Equipment
