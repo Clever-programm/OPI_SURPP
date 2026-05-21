@@ -83,4 +83,57 @@ async def sample_competence(client: AsyncClient):
         "description": "Приготовление кремов"
     }
     response = await client.post("/api/v1/competences/", json=data)
+    assert response.status_code == 201
+    return response.json()
+
+@pytest.fixture
+async def sample_order(client: AsyncClient, sample_recipe):
+    data = {
+        "due_date": "2026-12-31",
+        "priority": 2,
+        "items": [{"recipe_id": sample_recipe["id"], "quantity": 5}]
+    }
+    resp = await client.post("/api/v1/orders/", json=data)
+    return resp.json()
+
+
+@pytest.fixture
+async def sample_employee(client: AsyncClient, sample_competence):
+    """Создаёт тестового сотрудника."""
+    data = {
+        "name": "Иванов Иван",
+        "active": True,
+        "competences": [
+            {
+                "employee_id": 1,
+                "competence_id": sample_competence["id"]
+            }
+        ]
+    }
+    response = await client.post("/api/v1/employees/", json=data)
+    return response.json()
+
+
+@pytest.fixture
+async def sample_recipe(client: AsyncClient, sample_ingredient, sample_equipment):
+    """Создаёт тестовый рецепт."""
+    data = {
+        "name": "Торт Прага",
+        "ingredients": [
+            {
+                "ingredient_id": sample_ingredient["id"],
+                "quantity": 2.0
+            }
+        ],
+        "operations": [
+            {
+                "name": "Выпекание",
+                "duration_minutes": 60,
+                "sequence_number": 1,
+                "equipment_id": sample_equipment["id"],
+                "competence_id": None
+            }
+        ]
+    }
+    response = await client.post("/api/v1/recipes/", json=data)
     return response.json()

@@ -45,9 +45,9 @@ class RecipeCreate(RecipeBase):
     def validate_operations_sequence(cls, v: Optional[List[OperationCreate]]) -> Optional[List[OperationCreate]]:
         """Проверка: sequence_order должен быть уникальным в рамках рецепта."""
         if v:
-            orders = [op.sequence_order for op in v]
+            orders = [op.sequence_number for op in v]
             if len(orders) != len(set(orders)):
-                raise ValueError('Порядковые номера операций (sequence_order) должны быть уникальными')
+                raise ValueError('Порядковые номера операций (sequence_number) должны быть уникальными')
         return v
 
 
